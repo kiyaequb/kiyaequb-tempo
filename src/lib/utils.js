@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
 
 const MONGO_URI = process.env.MONGO;
-
+console.log("✅ MONGO:", process.env.MONGO);
+if (!MONGO_URI) {
+  console.error('❌ MONGODB_URI is not defined in environment variables');
+  process.exit(1);
+}
 // Global cache for MongoDB connection (works across re-renders on Vercel)
 let cached = global.mongoose;
 
