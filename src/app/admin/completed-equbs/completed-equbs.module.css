@@ -1,0 +1,139 @@
+.container {
+  background: var(--bg);
+  padding: 20px;
+  border-radius: 10px;
+  min-height: 100vh;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--text);
+}
+
+.exportButton {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.exportButton:hover {
+  background: #45a049;
+}
+
+.tableContainer {
+  background: var(--bgSoft);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 600;
+  padding: 15px;
+  text-align: left;
+  border-bottom: 2px solid var(--bgSoft);
+}
+
+.table td {
+  padding: 15px;
+  border-bottom: 1px solid var(--bgSoft);
+  color: var(--text);
+}
+
+.table tbody tr:hover {
+  background: var(--bgSoft);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.viewButton {
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.viewButton:hover {
+  background: #1976D2;
+}
+
+.deleteButton {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.deleteButton:hover {
+  background: #d32f2f;
+}
+
+.totalsRow {
+  background: var(--bg) !important;
+  font-weight: bold;
+  border-top: 2px solid var(--bgSoft);
+}
+
+.totalsRow td {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .top {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .tableContainer {
+    overflow-x: auto;
+  }
+  
+  .table {
+    min-width: 800px;
+  }
+  
+  .actions {
+    flex-direction: column;
+    gap: 5px;
+  }
+} 

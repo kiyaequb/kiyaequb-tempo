@@ -357,9 +357,78 @@ const liveStreamSchema = new mongoose.Schema(
   },
   { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );
-// src/models/Image.js
 
-// Create model
+
+// src/models/completed equb
+const CompletedEqubSchema = new mongoose.Schema(
+  {
+    equbId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Equb",
+      required: true,
+      index: true, // 🔍 Index for faster queries
+    },
+    ownerId: {
+      type: String,
+      required: true
+    },
+    completedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    underManager: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Assuming manager is also in the User model
+      required: false,
+    },
+    fee: {
+      type: Number,
+      required: true,
+    },
+    totalPayment: {
+      type: Number,
+      required: true,
+    },
+    archived: {
+      type: Boolean,
+      default: false, // Useful for soft-deleting
+    },
+    completedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    equbName: {
+      type: String,
+      required: true,
+    },
+    equbAmount: {
+      type: Number,
+      required: true,
+    },
+    equbStartDate: {
+      type: Date,
+      required: true,
+    },
+    ownerName: {
+      type: String,
+      required: true,
+    },
+    ownerPhone: {
+      type: String,
+      required: true,
+    },
+    imageURL: {
+      type: String,
+      required: true   
+    }
+    
+  },
+  { timestamps: true }
+);
+
+export const CompletedEqub = mongoose.models?.CompletedEqub || mongoose.model("CompletedEqub", CompletedEqubSchema);
+
 export const LiveStream =
   mongoose.models?.LiveStream || mongoose.model("LiveStream", liveStreamSchema);
 

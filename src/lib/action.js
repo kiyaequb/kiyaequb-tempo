@@ -22,6 +22,7 @@ export const login = async (prevState, formData) => {
 
     // Remove all whitespace from the phone number
     phoneNumber = phoneNumber.replace(/\s/g, "");
+    
 
     // Check if phoneNumber starts with '+'
     if (phoneNumber.startsWith("+")) {

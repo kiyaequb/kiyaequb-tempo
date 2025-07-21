@@ -1,6 +1,6 @@
 import styles from "@/app/ui/dashboard/users/users.module.css";
 import stylesDate from "./stylesDate.module.css";
-import { Equb, User, Payment } from "@/lib/models";
+import { Equb, User, Payment, CompletedEqub } from "@/lib/models";
 import { connectToDb } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -400,6 +400,8 @@ const UsersPage = async ({ searchParams, params }) => {
     );
   }
 
+  // Check if the equb is completed
+  const completedEqub = await CompletedEqub.findOne({ equbId });
   // const payments = await Payment.find({ forEqub: equbId })
   //   .sort({
   //     createdAt: -1,
@@ -407,13 +409,13 @@ const UsersPage = async ({ searchParams, params }) => {
   //   .limit(10);
   const { count, payments } = await fetchPayments(page, equbId);
 
-  console.log(payments);
+  // console.log(payments);
 
   const { phoneNum, userUnderMgr, firstName, lastName } = await getPhoneNumber(
     equbId
   );
-  console.log(firstName, lastName);
-  console.log(phoneNum);
+  // console.log(firstName, lastName);
+  // console.log(phoneNum);
   function convertToEthiopianDateMoreEnhanced(gregorianDate) {
     // Define the Ethiopian month names
     const ethiopianMonthNames = [
@@ -505,7 +507,7 @@ const UsersPage = async ({ searchParams, params }) => {
   const paramsUserId = userAuth.id; //  not params but loggedIn *
   await connectToDb();
   const userLive = await User.findById(paramsUserId);
-
+  console.log('count-', payments.length,count);
   return (
     <div className={styles.container}>
       <Suspense fallback={<div>Loading...</div>}>
@@ -516,43 +518,50 @@ const UsersPage = async ({ searchParams, params }) => {
       <h1>Equb Amount: {equb.amount}</h1>
       <div className={styles.top}>
         {/* <Search placeholder="Search for a user..." /> */}
-        <form action={createPayment}>
-          <input type="hidden" name="equbId" id="equbId" value={equbId} />
-          <input
-            type="hidden"
-            name="receiverId"
-            id="receiverId"
-            value={paramsUserId}
-          />
-          <input
-            type="text"
-            placeholder="Enter amount"
-            name="amount"
-            id="amount"
-            className={styles.inputs}
-          />
-          {""}
-          {payments.length === 0 && (
-            <div className={stylesDate.containerDate}>
-              <div className={stylesDate.formDate}>
-                <div className={stylesDate.fieldDate}>
-                  <label htmlFor="date" className={stylesDate.labelDate}>
-                    Select start Date{" "}
-                  </label>
-                  <input
-                    type="date"
-                    id="date"
-                    name="date"
-                    className={stylesDate.inputDate}
-                  />
+        {count === 30 ? (
+          <div style={{ color: 'purple', fontWeight: 'bold', margin: '20okpx 0', }}>
+            30 days limit!
+          </div>
+        ) : completedEqub ? (
+          <div style={{ color: 'purple', fontWeight: 'bold', margin: '20px 0' }}>
+            This equb is completed. No more payments allowed.
+          </div>
+        ) : (
+          <form action={createPayment}>
+            <input type="hidden" name="equbId" id="equbId" value={equbId} />
+            <input
+              type="hidden"
+              name="receiverId"
+              id="receiverId"
+              value={paramsUserId}
+            />
+            <input
+              type="text"
+              placeholder="Enter amount"
+              name="amount"
+              id="amount"
+              className={styles.inputs}
+            />
+            {payments.length === 0 && (
+              <div className={stylesDate.containerDate}>
+                <div className={stylesDate.formDate}>
+                  <div className={stylesDate.fieldDate}>
+                    <label htmlFor="date" className={stylesDate.labelDate}>
+                      Select start Date{" "}
+                    </label>
+                    <input
+                      type="date"
+                      id="date"
+                      name="date"
+                      className={stylesDate.inputDate}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {""}
-          <button className={` ${styles.green}`}>Confirm</button>
-        </form>
+            )}
+            <button className={` ${styles.green}`}>Confirm</button>
+          </form>
+        )}
       </div>
       <table className={styles.table}>
         <thead>

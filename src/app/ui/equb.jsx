@@ -1,9 +1,12 @@
 import { auth } from "@/lib/auth";
-import { Equb, Payment, Transaction, User } from "@/lib/models";
+import { Equb, Payment, Transaction, User, CompletedEqub } from "@/lib/models";
 import { connectToDb } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import BhB from "./client";
+import dynamic from "next/dynamic";
+
+const CompleteEqubForm = dynamic(() => import("./CompleteEqubForm"), { ssr: false });
 
 const EqubDetails = async ({ equb }) => {
   // get count payments of this equb
@@ -14,59 +17,6 @@ const EqubDetails = async ({ equb }) => {
   console.log(owner.firstName);
   console.log(owner.LastName);
 
-  const handleComplete = async (formData) => {
-    "use server";
-    const { equbId, fee } = Object.fromEntries(formData);
-    // Implement delete functionality here
-    console.log("startung");
-    await connectToDb();
-    // find equb
-    const equb = await Equb.findById(equbId);
-
-    console.log(equb.name);
-    // create new transaction using the Trandsaction model with incomeOrPayment, reasonOfTransaction and amount
-    const inTransactionBecauseWeMadeThemToPayFeeForOurServices =
-      new Transaction({
-        incomeOrPayment: "in",
-        reasonOfTransaction: `Fee payment from ${
-          owner.firstName ? owner.firstName : "Unknown User"
-        } ${owner.lastName ? owner.lastName : ""} for equb: ${equb.name} `,
-        amount: fee,
-        phoneNumber: owner.phoneNumber,
-      });
-    await inTransactionBecauseWeMadeThemToPayFeeForOurServices.save();
-
-    // calculate all the total amount of payments of the equb and save the transaction as goingout for us because we giving the money to them
-    const totalAmountOfPayments = await Payment.aggregate([
-      {
-        $match: { forEqub: equbId },
-      },
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-        },
-      },
-    ]);
-
-    const outTransactionBecauseWeGaveTheMoneyToThem = new Transaction({
-      incomeOrPayment: "out",
-      reasonOfTransaction: `Equb payment  ${
-        owner.firstName ? owner.firstName : "Unknown User"
-      } ${owner.lastName ? owner.lastName : ""} for equb: ${equb.name}`,
-      amount: totalAmountOfPayments[0].totalAmount,
-      phoneNumber: owner.phoneNumber,
-    });
-    await outTransactionBecauseWeGaveTheMoneyToThem.save();
-    // now delete all payments of the equb
-    await Payment.deleteMany({ forEqub: equbId });
-
-    console.log("completed transaction");
-    revalidatePath("/admin/equbs");
-    revalidatePath("/admin/users/");
-    revalidatePath("/admin/users/[id]");
-    revalidatePath("/admin/payments/[id]");
-  };
   function convertToEthiopianDateMoreEnhanced(gregorianDate) {
     try {
       // Define the Ethiopian month names
@@ -172,6 +122,9 @@ const EqubDetails = async ({ equb }) => {
   await connectToDb();
   const userLive = await User.findById(user.id);
 
+  // Check if a CompletedEqub already exists for this equb
+  const completedEqubExists = await CompletedEqub.findOne({ equbId: equb._id });
+
   return (
     <div style={styles.equbDetails}>
       <div style={styles.field}>
@@ -220,24 +173,9 @@ const EqubDetails = async ({ equb }) => {
       </Link>
       <br />
       <br />
-      {((userLive.collectorOf === null && userLive.oprator !== true && userLive.managerMembers === null) ||
-        (userLive.isSystemAdmin === true && userLive.oprator !== true && userLive.managerMembers === null)) && (
-        <form action={handleComplete}>
-          <input type="hidden" value={equb?._id} name="equbId" />
-          {/* { input numer-only} */}
-          <input
-            type="number"
-            name="fee"
-            placeholder="Amount of Fee"
-            className="w-1/2 p-2 border border-gray-300 rounded-md text-black "
-          />
-
-          <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ">
-            Complete Equb
-          </button>
-        </form>
+      {(userLive && (userLive.isSystemAdmin === true || (userLive.managerMembers !== null && userLive.oprator !== true))) && !completedEqubExists && (
+        <CompleteEqubForm equbId={equb._id} owner={owner} />
       )}
-
       <br />
       <br />
 

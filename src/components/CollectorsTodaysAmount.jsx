@@ -9,9 +9,15 @@ export const CollectorsTodaysAmount = async ({ mngrId, day }) => {
   await connectToDb();
   console.log(mngrId);
 
-  // Find collectors based on the mngrId
+  // Find collectors based on the mngrId (exclude operators and manager)
   const collectors = await User.find({
-    underManager: mngrId, // Make sure mngrId is defined and matches the type
+    underManager: mngrId,
+    collectorOf: { $exists: true, $ne: null },
+    $or: [
+      { oprator: { $exists: false } },
+      { oprator: false },
+    ],
+    _id: { $ne: mngrId },
   });
 
   if (collectors.length === 0) {

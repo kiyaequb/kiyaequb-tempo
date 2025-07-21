@@ -9,17 +9,24 @@ export const CollectorsAndManagerTodaysAmount = async ({ mngrId, day }) => {
   await connectToDb();
   console.log(mngrId);
 
-  // Find collectors based on the mngrId
+  // Find collectors based on the mngrId (exclude operators)
   const collectors = await User.find({
-    underManager: mngrId, // Make sure mngrId is defined and matches the type
+    underManager: mngrId,
+    collectorOf: { $exists: true, $ne: null },
+    $or: [
+      { oprator: { $exists: false } },
+      { oprator: false },
+    ],
   });
 
-  if (collectors.length === 0) {
-    console.log(collectors);
-    return <div>No collectors assigned so far</div>;
-  }
+  // Find operators based on the mngrId
+  const operators = await User.find({
+    underManager: mngrId,
+    oprator: true,
+  });
 
   const collectorIds = collectors.map((collector) => collector.id);
+  const operatorIds = operators.map((operator) => operator.id);
 
   let today;
   let startOfDay;
@@ -96,8 +103,8 @@ export const CollectorsAndManagerTodaysAmount = async ({ mngrId, day }) => {
     );
   }
 
-  // Query payments for the array of collector IDs
-  const todayPayments = await Payment.find({
+  // Query payments for the array of collector IDs (collectors only)
+  const todayPaymentsCollectors = await Payment.find({
     to: { $in: collectorIds },
     $or: [
       {
@@ -119,19 +126,45 @@ export const CollectorsAndManagerTodaysAmount = async ({ mngrId, day }) => {
       },
     ],
   });
-  // Query payments for the array of collector IDs for starting ones only
 
-  // Aggregate payments for all collectors
-  let totalSum = 0;
-  const uniqueCollectors = new Set();
-
-  todayPayments.forEach((payment) => {
-    totalSum += payment.amount;
-    uniqueCollectors.add(payment.to);
+  // Query payments for the array of operator IDs
+  const todayPaymentsOperators = await Payment.find({
+    to: { $in: operatorIds },
+    $or: [
+      {
+        createdAt: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
+        $and: [
+          { isStartDay: { $ne: true } }, // Ensure isStartDay is not true
+          { startDate: { $exists: false } }, // Ensure startDate does not exist
+        ],
+      },
+      {
+        startDate: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
+        isStartDay: true,
+      },
+    ],
   });
 
-  const numOfCollectors = uniqueCollectors.size;
-  //////
+  // Aggregate payments for all collectors
+  let collectorsSum = 0;
+  todayPaymentsCollectors.forEach((payment) => {
+    collectorsSum += payment.amount;
+  });
+
+  // Aggregate payments for all operators
+  let operatorsSum = 0;
+  todayPaymentsOperators.forEach((payment) => {
+    operatorsSum += payment.amount;
+  });
+
+  // Manager's own payments
+  let managerSum = 0;
   const todayPaymentsMe = await Payment.find({
     to: mngrId,
     $or: [
@@ -154,17 +187,15 @@ export const CollectorsAndManagerTodaysAmount = async ({ mngrId, day }) => {
       },
     ],
   });
-
-  let sumMe = 0;
   todayPaymentsMe.forEach((payment) => {
-    sumMe += payment.amount;
+    managerSum += payment.amount;
   });
 
-  ///////
+  const totalSum = collectorsSum + managerSum + operatorsSum;
 
   return (
     <div>
-      {totalSum} + {sumMe} = {totalSum + sumMe} Birr
+      {collectorsSum} + {managerSum} + {operatorsSum} = {totalSum} Birr
     </div>
   );
 };

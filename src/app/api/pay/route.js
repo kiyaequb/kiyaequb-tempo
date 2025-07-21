@@ -1,4 +1,4 @@
-import { Agent, Equb, Payment, User } from "@/lib/models";
+import { Agent, Equb, Payment, User, CompletedEqub } from "@/lib/models";
 import { connectToDb } from "@/lib/utils";
 import { NextResponse } from "next/server";
 
@@ -77,6 +77,12 @@ export const POST = async (request) => {
       });
     }
 
+    // Prevent payment if equb is completed
+    const completedEqub = await CompletedEqub.findOne({ equbId: forEqub });
+    if (completedEqub) {
+      return NextResponse.json({ error: "This equb is completed. No more payments allowed." }, { status: 400 });
+    }
+
     const payment = new Payment({
       forEqub,
       date,
@@ -85,6 +91,18 @@ export const POST = async (request) => {
     });
 
     await payment.save();
+
+    // Set startDate/endDate on equb if needed
+    const paymentCount = await Payment.countDocuments({ forEqub });
+    if (paymentCount === 1) {
+      equb.startDate = new Date();
+      await equb.save();
+    }
+    if (paymentCount === 30) {
+      equb.endDate = new Date();
+      await equb.save();
+    }
+
     return NextResponse.json({
       message: "payment has been made successfully!",
     });

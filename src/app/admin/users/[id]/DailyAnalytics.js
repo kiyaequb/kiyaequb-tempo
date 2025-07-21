@@ -107,6 +107,7 @@ const DailyAnalytics = ({ user, loggedInUser }) => {
       {user.managerMembers !== null &&
         loggedInUser.oprator !== true &&
         renderAnalyticsSection(todaysDate, "Today", "/admin/users/payments")}
+        
       {user.collectorOf !== null &&
         loggedInUser.oprator !== true &&
         renderAnalyticsSection(todaysDate, "Today", "/admin/users/payments")}

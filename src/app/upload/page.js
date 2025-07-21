@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { CldUploadWidget } from "next-cloudinary";
+import Image from "next/image";
 
 const UploadPage = () => {
   const [imageUrl, setImageUrl] = useState(null);
@@ -21,10 +22,7 @@ const UploadPage = () => {
       </CldUploadWidget>
 
       {imageUrl && (
-        <div>
-          <h2>Uploaded Image:</h2>
-          <img src={imageUrl} alt="Uploaded Image" width={400} />
-        </div>
+        <Image src={imageUrl} alt="Uploaded Image" width={400} height={300} />
       )}
     </div>
   );
