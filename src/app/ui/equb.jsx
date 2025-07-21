@@ -174,7 +174,7 @@ const EqubDetails = async ({ equb }) => {
       <br />
       <br />
       {(userLive && (userLive.isSystemAdmin === true || (userLive.managerMembers !== null && userLive.oprator !== true))) && !completedEqubExists && (
-        <CompleteEqubForm equbId={equb._id} owner={owner} />
+        <CompleteEqubForm equbId={equb._id} ownerId={owner?._id} />
       )}
       <br />
       <br />
