@@ -143,7 +143,7 @@ export async function GET(req, { params }) {
       status: 200,
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename=\"${fileName}\"`
+        "Content-Disposition": `attachment; filename=${fileName}`
       }
     });
   } catch (err) {
