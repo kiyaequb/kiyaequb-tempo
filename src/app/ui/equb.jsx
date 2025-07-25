@@ -1,12 +1,14 @@
 import { auth } from "@/lib/auth";
-import { Equb, Payment, Transaction, User, CompletedEqub } from "@/lib/models";
+import { Equb, Payment, Transaction, User, CompletedEqub, PreGivenEqubDetails } from "@/lib/models";
 import { connectToDb } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import BhB from "./client";
 import dynamic from "next/dynamic";
+import EqubActionsClient from "./EqubActionsClient";
 
 const CompleteEqubForm = dynamic(() => import("./CompleteEqubForm"), { ssr: false });
+const PreGivenEqubForm = dynamic(() => import("./PreGivenEqubForm"), { ssr: false });
 
 const EqubDetails = async ({ equb }) => {
   // get count payments of this equb
@@ -122,8 +124,17 @@ const EqubDetails = async ({ equb }) => {
   await connectToDb();
   const userLive = await User.findById(user.id);
 
+  // Check if a PreGivenEqubDetails already exists for this equb
+  const preGivenDetails = await PreGivenEqubDetails.findOne({ equbId: equb._id, status: { $ne: 'rejected' } }).lean();
+
   // Check if a CompletedEqub already exists for this equb
   const completedEqubExists = await CompletedEqub.findOne({ equbId: equb._id });
+
+  // Determine if user is system admin
+  const isSystemAdmin = userLive.isSystemAdmin === true && userLive.oprator !== true;
+
+  // Determine if forms should be disabled
+  const disableForms = !!preGivenDetails;
 
   return (
     <div style={styles.equbDetails}>
@@ -173,9 +184,15 @@ const EqubDetails = async ({ equb }) => {
       </Link>
       <br />
       <br />
-      {(userLive && (userLive.isSystemAdmin === true || (userLive.managerMembers !== null && userLive.oprator !== true))) && !completedEqubExists && (
-        <CompleteEqubForm equbId={equb._id} ownerId={owner?._id} />
-      )}
+      <EqubActionsClient
+        preGivenDetails={preGivenDetails}
+        completedEqubExists={!!completedEqubExists}
+        isSystemAdmin={isSystemAdmin}
+        equbId={equb._id}
+        ownerId={owner?._id}
+        userId={userLive._id}
+        disableForms={disableForms}
+      />
       <br />
       <br />
 
@@ -187,7 +204,7 @@ const EqubDetails = async ({ equb }) => {
 
       {((userLive.collectorOf === null && userLive.oprator !== true) ||
         (userLive.isSystemAdmin === true && userLive.oprator !== true)) && (
-        <BhB equb={equb} />
+        <BhB equb={equb} isSystemAdmin={isSystemAdmin} />
       )}
     </div>
   );

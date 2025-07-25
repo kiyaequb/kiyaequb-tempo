@@ -15,39 +15,50 @@ import axios from "axios";
 import styles from "@/app/ui/dashboard/users/users.module.css";
 import { format } from "timeago.js";
 
-const BhB = ({ equb }) => {
+const BhB = ({ equb, isSystemAdmin }) => {
+  console.log('BhB equb:', equb);
+  console.log('BhB equb._id:', equb?._id);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAgentId, setSelectedAgentId] = useState(null); // Track selected agent for action
+  const [selectedEqubId, setSelectedEqubId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
-  // Approve agent
-  console.log(equb);
-
-  // Delete agent
-  const deleteAgent = async (id) => {
+  // Delete equb (admin only)
+  const deleteEqub = async (id) => {
+    setDeleting(true);
+    setDeleteError("");
     try {
-      console.log(id);
-      const response = await axios.delete(`/api/equb/${id}`);
-      console.log(response);
-      console.log(id);
+      const response = await fetch(`/api/equbs/${id}`, { method: "DELETE" });
+      if (response.ok) {
+        setIsModalOpen(false);
+        setDeleting(false);
+        window.location.reload();
+      } else {
+        const data = await response.json();
+        setDeleteError(data.error || "Failed to delete equb.");
+        setDeleting(false);
+      }
     } catch (error) {
-      console.error("Error deleting payment:", error);
+      setDeleteError("Error deleting equb.");
+      setDeleting(false);
     }
   };
 
-  // Open modal for agent image
-
-  // Handle delete action
   const handleDelete = (id) => {
-    setSelectedAgentId(id);
+    setSelectedEqubId(id);
     setIsModalOpen(true);
+    setDeleteError("");
   };
+
+  if (!isSystemAdmin || !equb || !equb._id) return null;
 
   return (
     <div className="">
       {/* Modal for approval/deletion confirmation */}
       <button
-        onClick={() => handleDelete(equb._id)}
-        className={`${styles.button} ${styles.delete}`}
+        onClick={() => handleDelete(equb._id.toString())}
+        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mb-2"
+        disabled={deleting}
       >
         Delete
       </button>
@@ -59,37 +70,30 @@ const BhB = ({ equb }) => {
       >
         <ModalContent>
           <ModalHeader>
-            <h2
-              className="text-xl font-bold text-black-900"
-              style={{ color: "black" }}
-            >
-              Are you sure you want to delete this equb?
+            <h2 className="text-xl font-bold text-black-900" style={{ color: "black" }}>
+              Confirm Deletion
             </h2>
           </ModalHeader>
           <ModalBody>
             <p className="text-black-900" style={{ color: "black" }}>
-              This payment was made {format(equb.createdAt)} and it is{" "}
-              {equb.name}-{equb.type} with amount of {equb.amount} birr. Please
-              note that all the associated payments will also be deleted. Do you
-              really want to delete it?
+              Are you sure you want to delete this equb? This will delete the equb, all its payments, and archive the completed equb if it exists.
             </p>
+            {deleteError && <div className="text-red-600 mb-2">{deleteError}</div>}
           </ModalBody>
           <ModalFooter>
             <button
-              onClick={() => {
-                deleteAgent(selectedAgentId);
-                setIsModalOpen(false);
-              }}
-              className="bg-red-500
-               text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              Delete
-            </button>
-            <button
               onClick={() => setIsModalOpen(false)}
               className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700"
+              disabled={deleting}
             >
               Cancel
+            </button>
+            <button
+              onClick={() => deleteEqub(selectedEqubId)}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              disabled={deleting}
+            >
+              {deleting ? "Processing..." : "Delete"}
             </button>
           </ModalFooter>
         </ModalContent>

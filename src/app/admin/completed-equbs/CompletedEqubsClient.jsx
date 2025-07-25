@@ -108,6 +108,7 @@ const CompletedEqubsClient = ({ completedEqubs, totals, isSystemAdmin, initialDa
 
   const confirmDelete = async () => {
     if (!pendingDeleteId) return;
+    setDeleting(true);
     try {
       const response = await fetch(`/api/completed-equbs/${pendingDeleteId}`, {
         method: 'DELETE',
@@ -122,6 +123,8 @@ const CompletedEqubsClient = ({ completedEqubs, totals, isSystemAdmin, initialDa
       }
     } catch (error) {
       toast.error("Error deleting completed equb.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -329,14 +332,16 @@ const CompletedEqubsClient = ({ completedEqubs, totals, isSystemAdmin, initialDa
               <button
                 className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-900"
                 onClick={cancelDelete}
+                disabled={deleting}
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={confirmDelete}
+                disabled={deleting}
               >
-                Delete
+                {deleting ? "Processing..." : "Delete"}
               </button>
             </div>
           </div>
@@ -357,11 +362,11 @@ const CompletedEqubsClient = ({ completedEqubs, totals, isSystemAdmin, initialDa
                 Cancel
               </button>
               <button
-                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={confirmDeleteAll}
                 disabled={deletingAll}
               >
-                {deletingAll ? "Deleting..." : "Delete All"}
+                {deletingAll ? "Processing..." : "Delete All"}
               </button>
             </div>
           </div>

@@ -35,10 +35,28 @@ const completedEqubsMenuItem = {
   ),
 };
 
+const preGivenEqubsMenuItem = {
+  title: "Pre Given Equbs",
+  path: "/admin/pre-given-equbs",
+  icon: (
+    // Hand holding coin icon
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="17" cy="7" r="2" fill="#e8eaed"/><path fill="#e8eaed" d="M2 17.5A2.5 2.5 0 0 1 4.5 15H13v-1.5a1.5 1.5 0 0 1 3 0V17a3 3 0 0 1-3 3H5.5A3.5 3.5 0 0 1 2 17.5Zm2.5.5A.5.5 0 0 0 5.5 18H13a1 1 0 0 0 1-1v-2h-9.5a.5.5 0 0 0-.5.5c0 .28.22.5.5.5H12v1H5.5a.5.5 0 0 0-.5.5Z"/></svg>
+  ),
+};
+
+const penaltyMenuItem = {
+  title: "Penalties",
+  path: "/admin/penalties",
+  icon: (
+    // Gavel icon
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="#e8eaed" d="M1 21h22v2H1zM5.293 17.707l1.414-1.414 2.829 2.828-1.414 1.415zM17.707 5.293l1.415-1.414 2.828 2.828-1.414 1.415zM2.808 16.293l13.485-13.485 1.414 1.414L4.222 17.707z"/></svg>
+  ),
+};
+
 const menuItemsAdmin = [
   {
     title: "Pages",
-    list: [
+    list: insertPenaltyBeforeCompleted([
       {
         title: "Dashboard",
         path: "/admin",
@@ -264,7 +282,7 @@ const menuItemsAdmin = [
           </svg>
         ),
       }, */
-    ],
+    ]),
   },
   {
     title: "System Information",
@@ -352,6 +370,9 @@ const menuItemsAdmin = [
   //   ],
   // },
 ];
+
+// Add Type 2 Equbs to admin sidebar
+menuItemsAdmin[0].list.push(preGivenEqubsMenuItem);
 
 const menuItemsNormal = [
   {
@@ -563,18 +584,41 @@ const menuItemsAgent = [
   // },
 ];
 
+// Insert Penalties before Completed Equbs in all menu lists
+function insertPenaltyBeforeCompleted(list) {
+  const completedIdx = list.findIndex(item => item.title === "Completed Equbs");
+  if (completedIdx !== -1) {
+    return [
+      ...list.slice(0, completedIdx),
+      penaltyMenuItem,
+      ...list.slice(completedIdx)
+    ];
+  } else {
+    return [...list, penaltyMenuItem];
+  }
+}
+
 // Build menu lists for each role
 const getMenuList = (role) => {
   if (role === "admin") return menuItemsAdmin;
   if (role === "manager") {
-    // Inject Completed Equbs for managers
+    // Managers see completed and pre-given equbs
     return menuItemsNormal.map((cat) => ({
       ...cat,
-      list: [...cat.list, completedEqubsMenuItem],
+      list: insertPenaltyBeforeCompleted([
+        ...cat.list,
+        completedEqubsMenuItem,
+        preGivenEqubsMenuItem,
+      ]),
     }));
   }
-  if (role === "operator") return menuItemsNormal;
-  if (role === "collector") return menuItemsNormal;
+  if (role === "operator" || role === "collector") {
+    // Operators and collectors do NOT see completed or pre-given equbs
+    return menuItemsNormal.map((cat) => ({
+      ...cat,
+      list: insertPenaltyBeforeCompleted([...cat.list]),
+    }));
+  }
   return [];
 };
 
@@ -656,13 +700,13 @@ const Sidebar = async () => {
       </div>
       <ul className={styles.list}>
         {menuList.map((cat) => (
-          <li key={cat.title}>
-            <span className={styles.cat}>{cat.title}</span>
-            {cat.list.map((item) => (
-              <MenuLink item={item} key={item.title} />
-            ))}
-          </li>
-        ))}
+            <li key={cat.title}>
+              <span className={styles.cat}>{cat.title}</span>
+              {cat.list.map((item) => (
+                <MenuLink item={item} key={item.title} />
+              ))}
+            </li>
+          ))}
       </ul>
       <form
         action={async () => {

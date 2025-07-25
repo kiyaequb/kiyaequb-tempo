@@ -5,6 +5,7 @@ import { connectToNewDb } from "@/lib/new_utils"; // Connection to the NEW datab
 import { NextResponse } from "next/server";
 import { validatePhoneNumber, hashPassword, callOriginalApi } from "@/lib/helpers"; // Shared helpers
 import mongoose from "mongoose"; // For ObjectId validation and transactions
+import { Payment, PreGivenEqubDetails } from "@/lib/models";
 // ... common imports ... 
 export const PATCH = async (request, { params }) => {
     const { paymentId } = params;
@@ -36,9 +37,11 @@ export const PATCH = async (request, { params }) => {
   
       payment.isApproved = true;
       payment.approvedByOriginalUserId = approverOriginalUserId;
+      payment.status = "received";
+      await payment.save();
+
       // The prompt mentioned setting `payerId`. In `NewPayment` schema, `payerMemberId` is already set.
       // If "setting payerId" means something else, clarify. Assuming it's covered by `payerMemberId`.
-      await payment.save();
   
       return NextResponse.json({ message: "Payment approved successfully", payment });
     } catch (err) {

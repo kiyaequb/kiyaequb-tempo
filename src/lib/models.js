@@ -427,6 +427,69 @@ const CompletedEqubSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
+const penaltySchema = new mongoose.Schema({
+  amount: Number,
+  date: Date,
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  equbId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Equb',
+    required: true,
+    index: true,
+  }
+});  
+
+const daysPaidSchema = new mongoose.Schema({
+  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', required: true},
+  amount: { type: Number, required: true },
+  date: { type: Date, required: true }
+}, { _id: false });
+
+const PreGivenEqubDetailsSchema = new mongoose.Schema({
+  equbId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Equb',
+    required: true,
+    index: true,
+  },
+  underManager: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true,
+  },
+  startDate: { type: Date },
+  endDate: { type: Date },
+  requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  returnedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  status: {
+    type: String,
+    enum: ['pending', 'approved','rejected', 'finished'],
+    default: 'pending',
+  },
+  completionImages: [String], // Cloudinary image URLs
+  fee: { type: Number, required: true },
+  penaltyReserve: { type: Number, required: true }, // original amount
+  remainingPenaltyReserve: { type: Number, required: true },
+  amountGiven: { type: Number, required: true },
+  penalties: [penaltySchema],
+  active: { type: Boolean, default: true },
+  daysPaid: {
+    type: [daysPaidSchema],
+    default: [],
+    validate: [arr => arr.length <= 30, 'daysPaid cannot exceed 30 entries']
+  },
+  equbAmount: { type: Number, required: true },
+  ownerName: { type: String, required: true },
+  ownerPhone: { type: String, required: true },
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+}, { timestamps: true });
+
+export const PreGivenEqubDetails = mongoose.models?.PreGivenEqubDetails || mongoose.model('PreGivenEqubDetails', PreGivenEqubDetailsSchema);
+export const Penalty = mongoose.models?.Penalty || mongoose.model('Penalty', penaltySchema);
+
 export const CompletedEqub = mongoose.models?.CompletedEqub || mongoose.model("CompletedEqub", CompletedEqubSchema);
 
 export const LiveStream =

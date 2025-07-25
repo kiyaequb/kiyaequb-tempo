@@ -1,7 +1,8 @@
 import { Copier } from "@/app/ui/Copier";
 import styles from "@/app/ui/dashboard/users/singleUser/singleUser.module.css";
 import { auth } from "@/lib/auth";
-import { Equb, User } from "@/lib/models";
+import { User } from "@/lib/models";
+import { NewEqub } from "@/lib/new_models";
 import { connectToDb } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
@@ -37,7 +38,7 @@ const SingleUserPage = async ({ params }) => {
     );
   }
 
-  const equbs = await Equb.find({ owner: paramsUser.id });
+  const equbs = await NewEqub.find({ creatorOriginalUserId: paramsUser.id });
   const managersAll = await User.find({
     managerMembers: { $exists: true, $ne: null },
   });

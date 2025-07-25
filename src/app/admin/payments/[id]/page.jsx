@@ -1,6 +1,6 @@
 import styles from "@/app/ui/dashboard/users/users.module.css";
 import stylesDate from "./stylesDate.module.css";
-import { Equb, User, Payment, CompletedEqub } from "@/lib/models";
+import { Equb, User, Payment, CompletedEqub, PreGivenEqubDetails } from "@/lib/models";
 import { connectToDb } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -193,10 +193,11 @@ const deletePayment = async (formData) => {
     await Payment.findByIdAndDelete(id);
   } catch (err) {
     console.log(err);
-    throw new Error("Failed to delete Equb!");
+    throw new Error("Failed to delete Payment!");
   }
 
   revalidatePath("/admin/payments");
+  revalidatePath("/admin/payments/[id]");
   revalidatePath("/admin/equbs");
   revalidatePath("/admin/users/[id]");
   revalidatePath("/admin/users");
@@ -204,14 +205,45 @@ const deletePayment = async (formData) => {
 const approvePayment = async (formData) => {
   "use server";
   const { id } = Object.fromEntries(formData);
-
+  
   try {
     await connectToDb();
     // approve the payment by updating its status which is pending to "approved"
     await Payment.findByIdAndUpdate(id, { status: "received" });
+
+    // approve the payment by updating its status which is pending to "received"
+    const payment = await Payment.findByIdAndUpdate(id, { status: "received" }, { new: true });
+    // Update PreGivenEqubDetails.daysPaid if applicable
+    if (payment) {
+      const preGivenEqub = await PreGivenEqubDetails.findOne({ equbId: payment.forEqub, status: "approved" });
+      if (preGivenEqub) {
+        const alreadyExists = preGivenEqub.daysPaid.some(entry => entry.paymentId.toString() === payment._id.toString());
+        if (!alreadyExists && preGivenEqub.daysPaid.length < 30) {
+          preGivenEqub.daysPaid.push({
+            paymentId: payment._id,
+            amount: payment.amount,
+            date: payment.date || payment.createdAt || new Date()
+          });
+          await preGivenEqub.save();
+        }
+        // After updating daysPaid, check if it should be marked as finished
+        if (preGivenEqub.daysPaid.length === 30) {
+          const totalPaid = preGivenEqub.daysPaid.reduce((sum, entry) => sum + entry.amount, 0);
+          const requiredTotal = (preGivenEqub.amountGiven || 0) + (preGivenEqub.penaltyReserve || 0) + (preGivenEqub.fee || 0);
+          if (totalPaid >= requiredTotal) {
+            preGivenEqub.status = 'finished';
+            await preGivenEqub.save();
+          }
+        }
+      }
+    }
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin/equbs");
+    revalidatePath("/admin/users/[id]");
+    revalidatePath("/admin/users");
   } catch (err) {
     console.log(err);
-    throw new Error("Failed to delete Equb!");
+    throw new Error("Failed to approve payment!");
   }
 
   revalidatePath("/admin/payments");
