@@ -36,7 +36,7 @@ export async function GET(req) {
           } catch (err) {
             console.error(`Failed to create global Penalty for equbId ${equb.equbId}:`, err);
           }
-          equb.remainingPenaltyReserve = (equb.remainingPenaltyReserve || 0) - penaltyAmount;
+          equb.remainingPenaltyReserve = (equb.remainingPenaltyReserve + penaltyAmount || 0) - penaltyAmount;
         }
       }
       try {
