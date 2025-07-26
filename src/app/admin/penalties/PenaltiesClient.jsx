@@ -17,6 +17,9 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
   const [processingAction, setProcessingAction] = useState("");
   const [showSmsModal, setShowSmsModal] = useState(false);
   const [selectedPenalty, setSelectedPenalty] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmPenalty, setConfirmPenalty] = useState(null);
 
   // Date navigation
   const getDateString = (date) => format(date, "yyyy-MM-dd");
@@ -43,10 +46,19 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
 
   // Action handlers
   const handleApprove = async (id) => {
-    setProcessingId(id);
+    const penalty = penalties.find(p => p._id === id);
+    setConfirmPenalty(penalty);
+    setConfirmAction("approve");
+    setShowConfirmModal(true);
+  };
+
+  const handleApproveConfirm = async () => {
+    if (!confirmPenalty) return;
+    
+    setProcessingId(confirmPenalty._id);
     setProcessingAction("approve");
     try {
-      const res = await fetch(`/api/penalty/${id}/approve`, { method: "POST" });
+      const res = await fetch(`/api/penalty/${confirmPenalty._id}/approve`, { method: "POST" });
       if (res.ok) {
         window.location.reload();
       } else {
@@ -58,6 +70,9 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
     } finally {
       setProcessingId(null);
       setProcessingAction("");
+      setShowConfirmModal(false);
+      setConfirmPenalty(null);
+      setConfirmAction(null);
     }
   };
   
@@ -81,10 +96,19 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
   };
   
   const handleCancel = async (id) => {
-    setProcessingId(id);
+    const penalty = penalties.find(p => p._id === id);
+    setConfirmPenalty(penalty);
+    setConfirmAction("cancel");
+    setShowConfirmModal(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!confirmPenalty) return;
+    
+    setProcessingId(confirmPenalty._id);
     setProcessingAction("cancel");
     try {
-      const res = await fetch(`/api/penalty/${id}/reject`, { method: "POST" });
+      const res = await fetch(`/api/penalty/${confirmPenalty._id}/reject`, { method: "POST" });
       if (res.ok) {
         window.location.reload();
       } else {
@@ -96,15 +120,26 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
     } finally {
       setProcessingId(null);
       setProcessingAction("");
+      setShowConfirmModal(false);
+      setConfirmPenalty(null);
+      setConfirmAction(null);
     }
   };
   
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this penalty?")) return;
-    setProcessingId(id);
+    const penalty = penalties.find(p => p._id === id);
+    setConfirmPenalty(penalty);
+    setConfirmAction("delete");
+    setShowConfirmModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!confirmPenalty) return;
+    
+    setProcessingId(confirmPenalty._id);
     setProcessingAction("delete");
     try {
-      const res = await fetch(`/api/penalty/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/penalty/${confirmPenalty._id}`, { method: "DELETE" });
       if (res.ok) {
         window.location.reload();
       } else {
@@ -116,14 +151,17 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
     } finally {
       setProcessingId(null);
       setProcessingAction("");
+      setShowConfirmModal(false);
+      setConfirmPenalty(null);
+      setConfirmAction(null);
     }
   };
   
   const handleView = (id) => {
-    // Find the penalty to get the equbId
+    // Find the penalty to get the owner ID
     const penalty = penalties.find(p => p._id === id);
-    if (penalty && penalty.equbId) {
-      router.push(`/admin/equbs/${penalty.equbId._id}`);
+    if (penalty && penalty.equbId && penalty.equbId.owner) {
+      router.push(`/admin/users/${penalty.equbId.owner}`);
     }
   };
   
@@ -300,6 +338,59 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
                 disabled={processingId === selectedPenalty?._id && processingAction === "sms"}
               >
                 {processingId === selectedPenalty?._id && processingAction === "sms" ? "Confirming..." : "Yes, SMS Sent"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Confirmation Modal */}
+      {showConfirmModal && confirmPenalty && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-gray-800 rounded-lg p-6 shadow-lg w-80">
+            <h2 className="text-lg font-bold mb-4 text-white">
+              Confirm {confirmAction === "approve" ? "Approve" : confirmAction === "cancel" ? "Cancel" : "Delete"} Penalty
+            </h2>
+            <p className="mb-6 text-gray-300">
+              Are you sure you want to {confirmAction === "approve" ? "approve" : confirmAction === "cancel" ? "cancel" : "delete"} this penalty for {confirmPenalty.ownerName}?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                className="px-4 py-2 rounded bg-gray-600 hover:bg-gray-500 text-white"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setConfirmPenalty(null);
+                  setConfirmAction(null);
+                }}
+                disabled={processingId === confirmPenalty._id && processingAction === confirmAction}
+              >
+                Cancel
+              </button>
+              <button
+                className={`px-4 py-2 rounded text-white ${
+                  confirmAction === "approve" 
+                    ? "bg-green-600 hover:bg-green-700" 
+                    : confirmAction === "cancel" 
+                    ? "bg-yellow-600 hover:bg-yellow-700" 
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+                onClick={
+                  confirmAction === "approve" 
+                    ? handleApproveConfirm 
+                    : confirmAction === "cancel" 
+                    ? handleCancelConfirm 
+                    : handleDeleteConfirm
+                }
+                disabled={processingId === confirmPenalty._id && processingAction === confirmAction}
+              >
+                {processingId === confirmPenalty._id && processingAction === confirmAction 
+                  ? "Processing..." 
+                  : confirmAction === "approve" 
+                    ? "Approve" 
+                    : confirmAction === "cancel" 
+                    ? "Cancel" 
+                    : "Delete"
+                }
               </button>
             </div>
           </div>
