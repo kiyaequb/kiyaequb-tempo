@@ -169,34 +169,43 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
     // Get owner phone number from the penalty data
     const ownerPhone = penalty.ownerPhone;
     if (ownerPhone && ownerPhone !== "-") {
-      // Fetch PreGivenEqubDetails for this penalty
-      let penaltyReserve = penalty.penaltyReserve;
-      let remainingPenaltyReserve = penalty.remainingPenaltyReserve;
-      // If not present, try to get from penalty.equbId (populated)
-      if (penalty.equbId && typeof penalty.equbId === 'object') {
-        if (penalty.equbId.penaltyReserve) penaltyReserve = penalty.equbId.penaltyReserve;
-        if (penalty.equbId.remainingPenaltyReserve) remainingPenaltyReserve = penalty.equbId.remainingPenaltyReserve;
+      try {
+        // Fetch PreGivenEqubDetails for this penalty's equb
+        const res = await fetch(`/api/pre-given-equb/details/${penalty.equbId._id}`);
+        if (!res.ok) {
+          throw new Error('Failed to fetch PreGivenEqubDetails');
+        }
+        const preGivenDetails = await res.json();
+        
+        // Get penalty data from PreGivenEqubDetails
+        const penaltyReserve = preGivenDetails.penaltyReserve || 0;
+        const remainingPenaltyReserve = preGivenDetails.remainingPenaltyReserve || 0;
+        
+        // Calculate 10% penalty
+        const tenPercentPenalty = Math.round(penaltyReserve * 0.1);
+        const result = remainingPenaltyReserve - tenPercentPenalty;
+        
+        // Format missed date (Ethiopian)
+        let missedDate = "-";
+        if (penalty.date) {
+          const ethDate = convertToEthiopianDateMoreEnhanced(new Date(penalty.date));
+          if (ethDate) missedDate = `${ethDate.dayName} ${ethDate.day}-${ethDate.month}-${ethDate.year}`;
+        }
+        
+        // Compose message
+        const message = `ውድ ደንበኛችን እቁቦን  እየከፈሉ ስላልሆነ ካሎት ተቀማጭ ገንዘብ ላይ የቀን ${missedDate} ${tenPercentPenalty} ብር ተቀናሽ ተደርጓል ።\n${remainingPenaltyReserve} ብር - ${tenPercentPenalty} ብር = ${result} ብር\nለማንኛውም አስተያየት ወይም ጥያቄ ወደ 0905059016 ወይም 0716892549 ይደውሉ። \nእናመሰግናለን! ኪያ እቁብ`;
+        
+        // Open device SMS app
+        const smsUrl = `sms:${ownerPhone}?body=${encodeURIComponent(message)}`;
+        window.open(smsUrl, '_blank');
+        
+        // Show confirmation modal
+        setSelectedPenalty(penalty);
+        setShowSmsModal(true);
+      } catch (error) {
+        console.error('Error fetching PreGivenEqubDetails:', error);
+        alert('Failed to fetch penalty data. Please try again.');
       }
-      // Fallbacks
-      penaltyReserve = penaltyReserve || 0;
-      remainingPenaltyReserve = remainingPenaltyReserve || 0;
-      // Calculate 10% penalty
-      const tenPercentPenalty = Math.round(penaltyReserve * 0.1);
-      const result = remainingPenaltyReserve - tenPercentPenalty;
-      // Format missed date (Ethiopian)
-      let missedDate = "-";
-      if (penalty.date) {
-        const ethDate = convertToEthiopianDateMoreEnhanced(new Date(penalty.date));
-        if (ethDate) missedDate = `${ethDate.dayName} ${ethDate.day}-${ethDate.month}-${ethDate.year}`;
-      }
-      // Compose message
-      const message = `ውድ ደንበኛችን እቁቦን  እየከፈሉ ስላልሆነ ካሎት ተቀማጭ ገንዘብ ላይ የቀን ${missedDate} ${tenPercentPenalty} ብር ተቀናሽ ተደርጓል ።\n${remainingPenaltyReserve} ብር - ${tenPercentPenalty} ብር = ${result} ብር\nለማንኛውም አስተያየት ወይም ጥያቄ ወደ 0905059016 ወይም 0716892549 ይደውሉ። \nእናመሰግናለን! ኪያ እቁብ`;
-      // Open device SMS app
-      const smsUrl = `sms:${ownerPhone}?body=${encodeURIComponent(message)}`;
-      window.open(smsUrl, '_blank');
-      // Show confirmation modal
-      setSelectedPenalty(penalty);
-      setShowSmsModal(true);
     } else {
       alert("Owner phone number not found");
     }
