@@ -183,7 +183,7 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
         
         // Calculate 10% penalty
         const tenPercentPenalty = Math.round(penaltyReserve * 0.1);
-        const result = remainingPenaltyReserve - tenPercentPenalty;
+        const result = remainingPenaltyReserve ;
         
         // Format missed date (Ethiopian)
         let missedDate = "-";
