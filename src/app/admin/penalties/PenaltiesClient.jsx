@@ -193,7 +193,7 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
         }
         
         // Compose message
-        const message = `ውድ ደንበኛችን እቁቦን  እየከፈሉ ስላልሆነ ካሎት ተቀማጭ ገንዘብ ላይ የቀን ${missedDate} ${tenPercentPenalty} ብር ተቀናሽ ተደርጓል ።\n${remainingPenaltyReserve} ብር - ${tenPercentPenalty} ብር = ${result} ብር\nለማንኛውም አስተያየት ወይም ጥያቄ ወደ 0905059016 ወይም 0716892549 ይደውሉ። \nእናመሰግናለን! ኪያ እቁብ`;
+        const message = `ውድ ደንበኛችን እቁቦን  እየከፈሉ ስላልሆነ ካሎት ተቀማጭ ገንዘብ ላይ የቀን ${missedDate} ${tenPercentPenalty} ብር ተቀናሽ ተደርጓል ።\n${remainingPenaltyReserve + tenPercentPenalty} ብር - ${tenPercentPenalty} ብር = ${result} ብር\nለማንኛውም አስተያየት ወይም ጥያቄ ወደ 0905059016 ወይም 0716892549 ይደውሉ። \nእናመሰግናለን! ኪያ እቁብ`;
         
         // Open device SMS app
         const smsUrl = `sms:${ownerPhone}?body=${encodeURIComponent(message)}`;
