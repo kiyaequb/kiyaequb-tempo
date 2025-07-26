@@ -133,6 +133,9 @@ const EqubDetails = async ({ equb }) => {
   // Determine if user is system admin
   const isSystemAdmin = userLive.isSystemAdmin === true && userLive.oprator !== true;
 
+  // Determine if user is manager
+  const isManager = userLive.managerMembers !== null && userLive.oprator !== true && !userLive.isSystemAdmin;
+
   // Determine if forms should be disabled
   const disableForms = !!preGivenDetails;
 
@@ -188,6 +191,7 @@ const EqubDetails = async ({ equb }) => {
         preGivenDetails={preGivenDetails}
         completedEqubExists={!!completedEqubExists}
         isSystemAdmin={isSystemAdmin}
+        isManager={isManager}
         equbId={equb._id}
         ownerId={owner?._id}
         userId={userLive._id}

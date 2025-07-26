@@ -3,7 +3,7 @@ import { useState } from "react";
 import PreGivenEqubForm from "./PreGivenEqubForm";
 import CompleteEqubForm from "./CompleteEqubForm";
 
-const EqubActionsClient = ({ preGivenDetails, completedEqubExists, isSystemAdmin, equbId, ownerId, userId, disableForms }) => {
+const EqubActionsClient = ({ preGivenDetails, completedEqubExists, isSystemAdmin, equbId, ownerId, userId, disableForms, isManager }) => {
   const [showPreGivenForm, setShowPreGivenForm] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [localPreGivenPending, setLocalPreGivenPending] = useState(false);
@@ -12,7 +12,12 @@ const EqubActionsClient = ({ preGivenDetails, completedEqubExists, isSystemAdmin
   const [deleteError, setDeleteError] = useState("");
 
   // Only admin/manager can see actions or status
-  const isAdminOrManager = userId === ownerId; // Assuming ownerId is the user who created the equb
+  const isAdminOrManager = isSystemAdmin || isManager;
+
+  // If not admin or manager, do not render forms
+  if (!isAdminOrManager) {
+    return null;
+  }
 
   // If forms are disabled, show a message and do not render forms
   if (disableForms) {
