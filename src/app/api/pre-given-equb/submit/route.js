@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDb } from "@/lib/utils";
-import { PreGivenEqubDetails, User, Equb } from "@/lib/models";
+import { PreGivenEqubDetails, User, Equb, Payment } from "@/lib/models";
 
 export async function POST(req) {
   try {
@@ -22,6 +22,19 @@ export async function POST(req) {
     }
     // Fetch the equb owner user
     const equbOwner = equb.owner ? await User.findById(equb.owner) : null;
+    
+    // Check for existing received payments for this equb
+    const existingPayments = await Payment.find({ 
+      forEqub: equbId, 
+      status: "received" 
+    }).sort({ createdAt: 1 }); // Sort by date ascending
+    console.log('payments', existingPayments);
+    // Set startDate to earliest payment date if payments exist, otherwise null
+    let startDate = null;
+    if (existingPayments.length > 0) {
+      startDate = existingPayments[0].createdAt; // Earliest payment date
+    }
+    
     // Determine underManager
     let underManager = null;
     if (user.managerMembers !== null && user.oprator !== true && !user.isSystemAdmin) {
@@ -39,7 +52,7 @@ export async function POST(req) {
       status: "pending",
       active: true,
       underManager,
-      startDate: equb.createdAt,
+      startDate: startDate,
       equbAmount: equb.amount,
       ownerName: equbOwner ? `${equbOwner.firstName || ""} ${equbOwner.lastName || ""}` : "",
       ownerPhone: equbOwner ? equbOwner.phoneNumber || "" : "",

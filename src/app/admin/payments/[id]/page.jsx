@@ -217,6 +217,11 @@ const approvePayment = async (formData) => {
     if (payment) {
       const preGivenEqub = await PreGivenEqubDetails.findOne({ equbId: payment.forEqub, status: "approved" });
       if (preGivenEqub) {
+        // Check if startDate is null/empty and set it to payment date if it's the first payment
+        if (!preGivenEqub.startDate) {
+          preGivenEqub.startDate = payment.createdAt || payment.data || new Date();
+        }
+        
         const alreadyExists = preGivenEqub.daysPaid.some(entry => entry.paymentId.toString() === payment._id.toString());
         if (!alreadyExists && preGivenEqub.daysPaid.length < 30) {
           preGivenEqub.daysPaid.push({
