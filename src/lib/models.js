@@ -432,14 +432,15 @@ const penaltySchema = new mongoose.Schema({
   amount: Number,
   date: Date,
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  handledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  smsSent: { type: Boolean, default: false },
   equbId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Equb',
     required: true,
     index: true,
   }
-});  
+}, { timestamps: true });  
 
 const daysPaidSchema = new mongoose.Schema({
   paymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', required: true},

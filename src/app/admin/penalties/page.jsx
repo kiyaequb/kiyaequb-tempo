@@ -36,7 +36,7 @@ export default async function PenaltiesPage({ searchParams }) {
   const dayEnd = endOfDay(selectedDate);
 
   // Build query based on role
-  let penaltyQuery = { date: { $gte: dayStart, $lte: dayEnd } };
+  let penaltyQuery = { createdAt: { $gte: dayStart, $lte: dayEnd } };
   if (role === "operator" || role === "collector") {
     penaltyQuery.status = "approved";
   }
@@ -44,17 +44,20 @@ export default async function PenaltiesPage({ searchParams }) {
   // Fetch penalties for the day
   let penalties = await Penalty.find(penaltyQuery)
     .populate({ path: "equbId", model: Equb })
-    .populate({ path: "approvedBy", model: User })
+    .populate({ path: "handledBy", model: User })
+    .sort({ smsSent: 1, createdAt: -1 }) // smsSent: false first, then by createdAt (newest first)
     .lean();
 
-  // Fetch owner names for each penalty
+  // Fetch owner names and phone numbers for each penalty
   for (let p of penalties) {
     if (p.equbId && p.equbId.owner) {
       const owner = await User.findById(p.equbId.owner).lean();
       p.ownerName = owner ? `${owner.firstName || ""} ${owner.lastName || ""}` : "-";
+      p.ownerPhone = owner ? owner.phoneNumber : "-";
       p.equbAmount = p.equbId.amount;
     } else {
       p.ownerName = "-";
+      p.ownerPhone = "-";
       p.equbAmount = "-";
     }
   }

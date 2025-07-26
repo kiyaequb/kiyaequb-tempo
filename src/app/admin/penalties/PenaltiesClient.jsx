@@ -2,6 +2,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { format, addDays, subDays, isToday } from "date-fns";
+import { convertToEthiopianDateMoreEnhanced } from "@/lib/convertToEthiopianDateMoreEnhanced";
 
 const statusColors = {
   approved: "bg-green-600 text-white",
@@ -14,6 +15,8 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
   const searchParams = useSearchParams();
   const [processingId, setProcessingId] = useState(null);
   const [processingAction, setProcessingAction] = useState("");
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [selectedPenalty, setSelectedPenalty] = useState(null);
 
   // Date navigation
   const getDateString = (date) => format(date, "yyyy-MM-dd");
@@ -38,48 +41,133 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
     router.replace(`?${params.toString()}`);
   };
 
-  // Action handlers (placeholders)
+  // Action handlers
   const handleApprove = async (id) => {
     setProcessingId(id);
     setProcessingAction("approve");
-    // TODO: Implement approve API call
-    setTimeout(() => {
+    try {
+      const res = await fetch(`/api/penalty/${id}/approve`, { method: "POST" });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to approve penalty");
+      }
+    } catch (error) {
+      alert("Failed to approve penalty");
+    } finally {
       setProcessingId(null);
       setProcessingAction("");
-    }, 500);
+    }
   };
+  
   const handleReject = async (id) => {
     setProcessingId(id);
     setProcessingAction("reject");
-    // TODO: Implement reject API call
-    setTimeout(() => {
+    try {
+      const res = await fetch(`/api/penalty/${id}/reject`, { method: "POST" });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to reject penalty");
+      }
+    } catch (error) {
+      alert("Failed to reject penalty");
+    } finally {
       setProcessingId(null);
       setProcessingAction("");
-    }, 500);
+    }
   };
+  
   const handleCancel = async (id) => {
     setProcessingId(id);
     setProcessingAction("cancel");
-    // TODO: Implement cancel API call
-    setTimeout(() => {
+    try {
+      const res = await fetch(`/api/penalty/${id}/reject`, { method: "POST" });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to cancel penalty");
+      }
+    } catch (error) {
+      alert("Failed to cancel penalty");
+    } finally {
       setProcessingId(null);
       setProcessingAction("");
-    }, 500);
+    }
   };
+  
   const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this penalty?")) return;
     setProcessingId(id);
     setProcessingAction("delete");
-    // TODO: Implement delete API call
-    setTimeout(() => {
+    try {
+      const res = await fetch(`/api/penalty/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to delete penalty");
+      }
+    } catch (error) {
+      alert("Failed to delete penalty");
+    } finally {
       setProcessingId(null);
       setProcessingAction("");
-    }, 500);
+    }
   };
+  
   const handleView = (id) => {
-    // TODO: Implement view logic (modal or page)
+    // Find the penalty to get the equbId
+    const penalty = penalties.find(p => p._id === id);
+    if (penalty && penalty.equbId) {
+      router.push(`/admin/equbs/${penalty.equbId._id}`);
+    }
   };
-  const handleSendSms = (id) => {
-    // TODO: Implement send SMS logic
+  
+  const handleSendSms = (penalty) => {
+    // Get owner phone number from the penalty data
+    const ownerPhone = penalty.ownerPhone;
+    if (ownerPhone && ownerPhone !== "-") {
+      // Create SMS message template
+      const message = `Penalty Alert: You have a pending penalty for your equb. Please contact us for details.`;
+      
+      // Open device SMS app
+      const smsUrl = `sms:${ownerPhone}?body=${encodeURIComponent(message)}`;
+      window.open(smsUrl, '_blank');
+      
+      // Show confirmation modal
+      setSelectedPenalty(penalty);
+      setShowSmsModal(true);
+    } else {
+      alert("Owner phone number not found");
+    }
+  };
+
+  const confirmSmsSent = async () => {
+    if (!selectedPenalty) return;
+    
+    setProcessingId(selectedPenalty._id);
+    setProcessingAction("sms");
+    
+    try {
+      const res = await fetch(`/api/penalty/${selectedPenalty._id}/sms-sent`, { method: "POST" });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to mark SMS as sent");
+      }
+    } catch (error) {
+      alert("Failed to mark SMS as sent");
+    } finally {
+      setProcessingId(null);
+      setProcessingAction("");
+      setShowSmsModal(false);
+      setSelectedPenalty(null);
+    }
   };
 
   return (
@@ -123,9 +211,18 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
             <tr key={p._id} className="hover:bg-gray-700">
               <td className="p-2 text-center">{p.ownerName}</td>
               <td className="p-2 text-center">{p.equbAmount}</td>
-              <td className="p-2 text-center">{p.date ? format(new Date(p.date), "yyyy-MM-dd") : "-"}</td>
-              <td className={`p-2 text-center capitalize ${statusColors[p.status] || ""}`}>{p.status}</td>
-              <td className="p-2 text-center">{p.approvedBy ? `${p.approvedBy.firstName || ""} ${p.approvedBy.lastName || ""}` : "-"}</td>
+              <td className="p-2 text-center">
+                {p.date ? (() => {
+                  const ethiopianDate = convertToEthiopianDateMoreEnhanced(new Date(p.date));
+                  return `${ethiopianDate.dayName} ${ethiopianDate.day}-${ethiopianDate.month}-${ethiopianDate.year}`;
+                })() : "-"}
+              </td>
+              <td className="p-2 text-center">
+                <span className={`px-2 py-1 rounded text-xs capitalize ${statusColors[p.status] || ""}`}>
+                  {p.status}
+                </span>
+              </td>
+              <td className="p-2 text-center">{p.handledBy ? `${p.handledBy.firstName || ""} ${p.handledBy.lastName || ""}` : "-"}</td>
               <td className="p-2 flex gap-2 justify-center">
                 {/* Role-based actions */}
                 {(role === "admin" || role === "manager") && p.status === "pending" && (
@@ -148,10 +245,10 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
                         disabled={processingId === p._id && processingAction === "cancel"}
                         onClick={() => handleCancel(p._id)}
                       >Cancel</button>
-                      )}
+                    )}
                   </>
                 )}
-                {role === "admin" && (
+                {role === "admin" && p.status === "approved" && (
                   <button
                     className="bg-red-700 px-2 py-1 rounded text-white"
                     disabled={processingId === p._id && processingAction === "delete"}
@@ -164,10 +261,11 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
                     onClick={() => handleView(p._id)}
                   >View</button>
                 )}
-                {(role === "admin" || role === "manager" || role === "operator") && p.status === "approved" && (
+                {(role === "admin" || role === "manager" || role === "operator") && p.status === "approved" && !p.smsSent && (
                   <button
                     className="bg-purple-600 px-2 py-1 rounded text-white"
-                    onClick={() => handleSendSms(p._id)}
+                    disabled={processingId === p._id && processingAction === "sms"}
+                    onClick={() => handleSendSms(p)}
                   >Send SMS</button>
                 )}
               </td>
@@ -176,6 +274,37 @@ export default function PenaltiesClient({ penalties, role, selectedDate }) {
         </tbody>
       </table>
       {penalties.length === 0 && <div className="text-gray-400 mt-4">No penalties for this day.</div>}
+
+      {/* SMS Confirmation Modal */}
+      {showSmsModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-gray-800 rounded-lg p-6 shadow-lg w-80">
+            <h2 className="text-lg font-bold mb-4 text-white">Confirm SMS Sent</h2>
+            <p className="mb-6 text-gray-300">
+              Did you successfully send the SMS to the owner?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                className="px-4 py-2 rounded bg-gray-600 hover:bg-gray-500 text-white"
+                onClick={() => {
+                  setShowSmsModal(false);
+                  setSelectedPenalty(null);
+                }}
+                disabled={processingId === selectedPenalty?._id && processingAction === "sms"}
+              >
+                No
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white"
+                onClick={confirmSmsSent}
+                disabled={processingId === selectedPenalty?._id && processingAction === "sms"}
+              >
+                {processingId === selectedPenalty?._id && processingAction === "sms" ? "Confirming..." : "Yes, SMS Sent"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
